@@ -1,0 +1,2644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resonance — the game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B1220;
+    --panel: #121A2C;
+    --panel-2: #0E1626;
+    --metal: #9C7A57;
+    --cyan: #5EC8D8;
+    --gold: #E8A33D;
+    --red: #D9534F;
+    --text: #E7E2D3;
+    --text-dim: #8892A6;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(ellipse at 50% -10%, #17233C 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 24px 14px;
+  }
+  .wrap{ width: 100%; max-width: 720px; }
+
+  .heading{ margin-bottom: 18px; }
+  .heading h1{
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px 0;
+  }
+  .heading p{
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .panel{
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid #223252;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ---------- Menu ---------- */
+  .sandbox-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    border-radius: 12px;
+    border: 1px solid #3A2E1C;
+    background: linear-gradient(135deg, #1A1408, #0E1626);
+    cursor: pointer;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .sandbox-card:hover{ border-color: var(--metal); transform: translateY(-1px); }
+  .sandbox-card h3{ margin:0 0 3px 0; font-size:1rem; color: var(--metal); }
+  .sandbox-card p{ margin:0; font-size:0.78rem; color: var(--text-dim); }
+  .sandbox-card .go{ font-size:1.3rem; color: var(--metal); }
+  .sandbox-card.locked{ opacity: 0.4; cursor: not-allowed; }
+  .sandbox-card.kundt-card{ border-color: #3a3320; background: linear-gradient(135deg, #1a1608, #0E1626); }
+  .sandbox-card.kundt-card:hover{ border-color: var(--gold); }
+  .sandbox-card.kundt-card h3{ color: var(--gold); }
+  .sandbox-card.kundt-card .go{ color: var(--gold); }
+
+  .sandbox-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sandbox-mini-card{
+    padding: 14px 14px;
+    border-radius: 10px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-top: 3px solid #223252;
+    cursor: pointer;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .sandbox-mini-card:hover{ transform: translateY(-2px); }
+  .sandbox-mini-card h4{ margin: 0 0 3px 0; font-size: 0.88rem; }
+  .sandbox-mini-card p{ margin: 0; font-size: 0.74rem; color: var(--text-dim); }
+  .sandbox-mini-card.ends-oo{ border-top-color: var(--cyan); }
+  .sandbox-mini-card.ends-oo:hover{ border-color: var(--cyan); }
+  .sandbox-mini-card.ends-oo h4{ color: var(--cyan); }
+  .sandbox-mini-card.ends-oc{ border-top-color: var(--gold); }
+  .sandbox-mini-card.ends-oc:hover{ border-color: var(--gold); }
+  .sandbox-mini-card.ends-oc h4{ color: var(--gold); }
+  .sandbox-mini-card.ends-cc{ border-top-color: var(--metal); }
+  .sandbox-mini-card.ends-cc:hover{ border-color: var(--metal); }
+  .sandbox-mini-card.ends-cc h4{ color: var(--metal); }
+
+  .section-label{
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 4px 0 10px 0;
+  }
+  .section-hint{
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin: -6px 0 10px 0;
+    line-height: 1.5;
+  }
+
+  .level-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .level-card{
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .1s ease, border-color .15s ease;
+  }
+  .level-card:hover{ border-color: #3A4E78; transform: translateY(-2px); }
+  .level-card.locked{ opacity: 0.38; cursor: not-allowed; }
+  .level-thumb{
+    width: 100%;
+    aspect-ratio: 160 / 100;
+    margin-bottom: 8px;
+    background: #0A1120;
+    border: 1px solid #182238;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .level-thumb img{ width: 82%; height: 82%; object-fit: contain; display: block; }
+  .level-num{ font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; color: var(--cyan); }
+  .level-title{ font-size: 0.7rem; color: var(--text-dim); margin: 4px 0 8px; min-height: 28px; line-height: 1.3; }
+  .level-stars{ color: var(--gold); font-size: 0.8rem; letter-spacing: 2px; }
+  .level-flags{
+    display:flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 6px;
+  }
+  .level-flag{
+    display:inline-block;
+    font-size: 0.54rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid #223252;
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .level-flag.blind{ color: var(--gold); border-color: #4a3a1a; }
+  .level-card.locked .level-flags{ display:none; }
+  .lock-icon{ font-size: 1.1rem; color: var(--text-dim); }
+
+  /* ---------- Game screen ---------- */
+  .level-hud{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .level-identity{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .level-icon{
+    width: 84px;
+    height: 52.5px;
+    flex-shrink: 0;
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 8px;
+    padding: 6px;
+    object-fit: contain;
+    display: block;
+  }
+  .level-icon[hidden]{ display:none; }
+  .level-identity-text{ min-width: 0; flex: 1; }
+  .level-name{ font-size: 0.92rem; font-weight: 500; }
+  .mode-pips{ display:flex; gap:6px; }
+  .pip{
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid #2A3B5C;
+    display:flex; align-items:center; justify-content:center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    background: #0A1120;
+    transition: all 0.2s ease;
+  }
+  .pip.found{
+    border-color: var(--gold);
+    color: #241705;
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  .level-sub{
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .timebar-wrap{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .timebar{
+    flex:1;
+    height: 8px;
+    border-radius: 5px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    overflow:hidden;
+  }
+  .timebar-fill{
+    height:100%;
+    width:100%;
+    background: linear-gradient(90deg, var(--cyan), var(--gold));
+    transition: width 0.15s linear, background 0.3s ease;
+  }
+  .timebar-fill.low{ background: var(--red); }
+  .timebar-label{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    min-width: 34px;
+    text-align: right;
+  }
+
+  .tube-stage{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 720 / 220;
+    margin-bottom: 18px;
+  }
+  .tube-bg{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 12%;
+    object-fit: contain;
+    opacity: 0.16;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .tube-bg[hidden]{ display:none; }
+  canvas{ width: 100%; height: 100%; display: block; border-radius: 8px; position: relative; z-index: 1; }
+
+  .toast{
+    position: absolute;
+    z-index: 2;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(232,163,61,0.14);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(4px); }
+
+  .readout-row{
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .freq-block{ line-height: 1; }
+  .freq-manual{
+    display:flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .freq-manual[hidden]{ display:none; }
+  .freq-manual input{
+    width: 90px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+  }
+  .freq-manual input:focus{ outline: none; border-color: var(--cyan); }
+  .freq-label, .meter-label{
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .freq-value{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--cyan);
+    transition: color 0.25s ease;
+  }
+  .freq-value.locked{ color: var(--gold); }
+  .freq-value.pulse{ animation: pulseFreq 0.5s ease; }
+  @keyframes pulseFreq{ 0%{ color: var(--gold); } 100%{ color: var(--cyan); } }
+  .freq-unit{ font-size: 1.05rem; color: var(--text-dim); margin-left: 6px; }
+
+  .meter-block{ flex: 1; min-width: 180px; }
+  .meter-label{ display:flex; justify-content: space-between; }
+  .meter-track{
+    height: 10px;
+    border-radius: 6px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    overflow: hidden;
+  }
+  .meter-fill{
+    height: 100%;
+    width: 0%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--cyan), var(--gold));
+    transition: width 0.08s linear;
+  }
+
+  /* Spectrum (shown only when hints are allowed) */
+  .spectrum{
+    position: relative;
+    height: 26px;
+    margin-bottom: 6px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .spectrum-tick{
+    position: absolute;
+    top: 5px; bottom: 5px;
+    width: 2px;
+    background: var(--cyan);
+    opacity: 0.45;
+    border-radius: 1px;
+    transition: opacity 0.15s ease, background 0.15s ease;
+  }
+  .spectrum-tick.hot{
+    opacity: 1;
+    background: var(--gold);
+    box-shadow: 0 0 10px var(--gold);
+  }
+  .spectrum-tick.done{ background: #6FCF97; opacity: 0.85; }
+  .spectrum-cursor{
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--text);
+    box-shadow: 0 0 8px rgba(255,255,255,0.55);
+    pointer-events: none;
+  }
+  .spectrum-labels{
+    position: relative;
+    height: 0;
+    overflow: visible;
+    margin-bottom: 4px;
+    transition: height 0.2s ease;
+  }
+  .spectrum-labels.show{ height: 16px; }
+  .spectrum-label{
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.15s ease;
+  }
+  .spectrum-labels.show .spectrum-label{ opacity: 1; }
+  .spectrum-label.hot{ color: var(--gold); }
+  .spectrum-label .f{ opacity: 0.65; margin-left: 4px; }
+  .spectrum-legend{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 0 2px;
+  }
+
+  /* Length slider (sandbox only) */
+  .level-row{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 8px;
+    font-size: 0.83rem;
+  }
+  .level-row label{ color: var(--text-dim); white-space: nowrap; }
+  .level-row input[type="range"]{
+    flex: 1;
+    accent-color: var(--cyan);
+    min-width: 80px;
+  }
+  .level-row .value{
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    min-width: 72px;
+    text-align: right;
+  }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .controls[hidden]{ display:none; }
+  button.step{
+    font-family: 'JetBrains Mono', monospace;
+    background: #16213A;
+    border: 1px solid #2A3B5C;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+  button.step:hover{ background: #1C2A48; }
+  button.step:active{ transform: scale(0.95); }
+  button.step.fine{ font-size: 0.72rem; color: var(--text-dim); }
+  button.step.active{ background: #1C2A48; border-color: var(--cyan); color: var(--cyan); }
+
+  .step-hint{
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin: -6px 0 12px 0;
+  }
+  .step-hint strong{ color: var(--cyan); font-weight: 500; }
+
+  .footer-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .footer-row.no-hint{ justify-content: flex-end; }
+  .hint-toggle{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .hint-toggle input{ accent-color: var(--gold); }
+
+  .icon-btn{
+    background: none;
+    border: 1px solid #2A3B5C;
+    color: var(--text-dim);
+    border-radius: 7px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .icon-btn:hover{ color: var(--text); border-color: #3A4E78; }
+  .unlock-all-btn{
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    text-align: center;
+    padding: 9px;
+    font-size: 0.76rem;
+  }
+  .unlock-all-btn[hidden]{ display:none; }
+
+  .kbd-hint{
+    text-align:center;
+    color: var(--text-dim);
+    font-size: 0.76rem;
+    margin-top: 14px;
+    line-height: 1.6;
+  }
+  .kbd-hint kbd{
+    font-family: 'JetBrains Mono', monospace;
+    background: #16213A;
+    border: 1px solid #2A3B5C;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.73rem;
+  }
+
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(4,7,14,0.82);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .overlay.show{ display:flex; }
+  .overlay-card{
+    background: linear-gradient(180deg, #16213A, #0E1626);
+    border: 1px solid #2A3B5C;
+    border-radius: 14px;
+    padding: 30px 28px;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7);
+  }
+  .overlay-card h2{ color: var(--gold); font-size: 1.3rem; margin: 0 0 10px 0; }
+  .overlay-card p{ color: var(--text-dim); font-size: 0.9rem; line-height: 1.6; margin: 0 0 4px 0; }
+  .stars-row{ font-size: 1.7rem; color: var(--gold); letter-spacing: 5px; margin: 10px 0; }
+  .formula{
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 16px 0;
+    font-size: 0.9rem;
+    word-break: break-word;
+    white-space: pre;
+    text-align: left;
+  }
+  .overlay-buttons{
+    display:flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .replay-btn{
+    background: var(--gold);
+    color: #241705;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .replay-btn:hover{ filter: brightness(1.08); }
+  .ghost-btn{
+    background: transparent;
+    border: 1px solid #2A3B5C;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .ghost-btn:hover{ border-color: #3A4E78; }
+
+  .kundt-svg-wrap{ position: relative; cursor: crosshair; user-select: none; }
+  .kundt-svg-wrap svg{ display:block; }
+  .kundt-click-marker{
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--gold);
+    box-shadow: 0 0 6px var(--gold);
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+  .kundt-measured{
+    text-align: center;
+    font-size: 0.86rem;
+    color: var(--text-dim);
+    margin: 10px 0;
+  }
+  .kundt-measured strong{ color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
+  .kundt-trial-label{
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 10px;
+  }
+  .kundt-summary-wrap{ overflow-x: auto; margin: 14px 0; }
+  .kundt-summary-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  .kundt-summary-table th, .kundt-summary-table td{
+    padding: 6px 8px;
+    border-bottom: 1px solid #223252;
+    text-align: center;
+  }
+  .kundt-summary-table th{ color: var(--text-dim); font-weight: 500; }
+  .kundt-inputs{
+    display:flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 14px 0;
+  }
+  .kundt-inputs label{
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .kundt-inputs input{
+    width: 80px;
+    background: #0A1120;
+    border: 1px solid #223252;
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 7px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .kundt-feedback{ min-height: 20px; font-size: 0.85rem; line-height: 1.5; }
+
+  /* ---------- Mini-mission ---------- */
+  .mission-card{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .mission-image-box{
+    width: 100px;
+    aspect-ratio: 160/100;
+    flex-shrink: 0;
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 8px;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .mission-image-box[hidden]{ display:none; }
+  .mission-image{ width: 82%; height: 82%; object-fit: contain; }
+  .mission-title{ font-size: 1.05rem; font-weight: 600; }
+  .mission-question{ font-size: 0.9rem; color: var(--text-dim); margin-bottom: 14px; line-height: 1.5; }
+  .mission-options{ display:flex; flex-direction:column; gap: 8px; margin-bottom: 6px; }
+  .mission-opt{
+    text-align:left;
+    background: #16213A;
+    border: 1px solid #2A3B5C;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    font-family: 'Space Grotesk', sans-serif;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .mission-opt:hover:not(:disabled){ border-color: #3A4E78; background: #1C2A48; }
+  .mission-opt:disabled{ cursor: default; }
+  .mission-opt.correct{ border-color: #6FCF97; background: rgba(111,207,151,0.12); color: #6FCF97; }
+  .mission-opt.wrong{ border-color: var(--red); background: rgba(217,83,79,0.12); color: #f0a5a2; }
+  .mission-feedback{
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--text-dim);
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .mission-feedback .ok{ color: #6FCF97; font-weight: 600; }
+  .mission-feedback .no{ color: var(--gold); font-weight: 600; }
+
+  /* ---------- Three-panel reveal ---------- */
+  .reveal-row{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 16px 0;
+  }
+  .reveal-panel{
+    flex: 1 1 100px;
+    max-width: 150px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 6px;
+  }
+  .reveal-panel.formula-panel{ max-width: 190px; }
+  .reveal-box{
+    width: 100%;
+    aspect-ratio: 160/100;
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 8px;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .reveal-box img{ width: 78%; height: 78%; object-fit: contain; }
+  .reveal-box svg{ width: 100%; height: 100%; display:block; }
+  .reveal-panel span{
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .reveal-panel .formula{ margin: 0; font-size: 0.68rem; padding: 8px; line-height: 1.5; }
+
+  /* ---------- Scientist's fiche (shown at a level's Result) ---------- */
+  .notebook-card{
+    background: #0A1120;
+    border: 1px solid #223252;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .notebook-card-image{
+    aspect-ratio: 160/100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .notebook-card-image img{ width: 70%; height: 70%; object-fit: contain; }
+  .notebook-card-body{ padding: 10px 12px 12px; text-align: left; }
+  .notebook-title{ font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; }
+  .notebook-fundamental{
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .notebook-fundamental span{ font-size: 0.68rem; color: var(--text-dim); font-family: 'Space Grotesk', sans-serif; }
+  .notebook-identity{ font-size: 0.72rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4; }
+  .notebook-sentence{
+    margin: 0;
+    padding-top: 8px;
+    border-top: 1px solid #182238;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .notebook-pedagogy{
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    background: rgba(94,200,216,0.08);
+    border-left: 2px solid var(--cyan);
+    border-radius: 4px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 420px){
+    .freq-value{ font-size: 2rem; }
+    .level-icon{ width: 60px; height: 37.5px; }
+    .level-identity{ gap: 10px; }
+    .mission-image-box{ width: 76px; }
+    .mission-card{ gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="screen active" id="menuScreen">
+    <div class="heading">
+      <h1>Resonance — the game</h1>
+      <p>Find a tube's natural modes by sweeping its frequency. Work through the levels, from simplest to most demanding.</p>
+    </div>
+    <div class="panel">
+      <div class="section-label">Sandbox</div>
+      <div class="sandbox-grid">
+        <div class="sandbox-mini-card ends-oo" id="sandboxOO">
+          <h4>Open — Open</h4>
+          <p>All harmonics.</p>
+        </div>
+        <div class="sandbox-mini-card ends-oc" id="sandboxOC">
+          <h4>Open — Closed</h4>
+          <p>Odd harmonics.</p>
+        </div>
+        <div class="sandbox-mini-card ends-cc" id="sandboxCC">
+          <h4>Closed — Closed</h4>
+          <p>Just like in the lab.</p>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:18px;">Experiment — Kundt's Tube</div>
+      <p class="section-hint">Find a natural mode, measure the gap between the powder piles with the ruler, then calculate the speed of sound.</p>
+      <div class="sandbox-card kundt-card" id="kundtEasyCard">
+        <div>
+          <h3>🧪 Easy mode — one measurement</h3>
+          <p>Just one resonance to find and measure.</p>
+        </div>
+        <div class="go">▶</div>
+      </div>
+      <div class="sandbox-card kundt-card" id="kundtFullCard">
+        <div>
+          <h3>🔬 Full experiment — 3 measurements</h3>
+          <p>Find and measure three different modes, then average your results.</p>
+        </div>
+        <div class="go">▶</div>
+      </div>
+      <div class="section-label" style="margin-top:18px;">Levels</div>
+      <div class="level-grid" id="levelGrid"></div>
+      <button class="icon-btn unlock-all-btn" id="unlockAllBtn">🔓 Unlock all levels</button>
+      <div class="section-label" style="margin-top:18px;">Find the Length</div>
+      <p class="section-hint">You're given the frequency — find the tube's length. No harmonics to hunt, just a good ear.</p>
+      <div class="level-grid" id="lengthLevelGrid"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="missionScreen">
+    <div class="heading">
+      <button class="icon-btn" id="missionMenuBtn" style="margin-bottom:10px;">← Menu</button>
+      <h1>Mini-mission</h1>
+      <p>Observe before you experiment.</p>
+    </div>
+    <div class="panel">
+      <div class="mission-card">
+        <div class="mission-image-box" id="missionImgBox"><img class="mission-image" id="missionImg" alt=""></div>
+        <div class="mission-title" id="missionTitle"></div>
+      </div>
+      <div class="mission-question">Based on the drawing, what do you think about this resonator's two ends?</div>
+      <div class="mission-options" id="missionOptions">
+        <button class="mission-opt" data-ends="OO">Open — Open</button>
+        <button class="mission-opt" data-ends="OC">Open — Closed</button>
+        <button class="mission-opt" data-ends="CC">Closed — Closed</button>
+      </div>
+      <div class="mission-feedback" id="missionFeedback" hidden></div>
+      <div class="overlay-buttons">
+        <button class="replay-btn" id="missionContinueBtn" hidden>Experiment →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="gameScreen">
+    <div class="heading">
+      <h1 id="gameTitle">Resonance</h1>
+      <p id="gameSubtitle">Sweep the frequency with ← → to make the tube vibrate.</p>
+    </div>
+
+    <div class="panel">
+      <div class="level-hud">
+        <button class="icon-btn" id="menuBtn">← Menu</button>
+        <div class="mode-pips" id="modePips"></div>
+      </div>
+      <div class="level-identity">
+        <img class="level-icon" id="levelIcon" alt="" hidden>
+        <div class="level-identity-text">
+          <div class="level-name" id="levelName">Sandbox</div>
+          <div class="level-sub" id="levelSub"></div>
+        </div>
+      </div>
+      <div class="timebar-wrap" id="timebarWrap" style="display:none;">
+        <div class="timebar"><div class="timebar-fill" id="timebarFill"></div></div>
+        <div class="timebar-label" id="timebarLabel">--</div>
+      </div>
+
+      <div class="tube-stage">
+        <img class="tube-bg" id="tubeBg" alt="" hidden>
+        <canvas id="tubeCanvas"></canvas>
+        <div class="toast" id="toast"></div>
+      </div>
+
+      <div class="readout-row">
+        <div class="freq-block">
+          <div class="freq-label" id="freqLabel">FREQUENCY</div>
+          <div class="freq-value" id="freqValue">000.0<span class="freq-unit">Hz</span></div>
+          <div class="freq-manual" id="freqManual">
+            <input type="number" id="freqInput" step="0.1" placeholder="Hz">
+            <button class="icon-btn" id="freqGoBtn">Go</button>
+          </div>
+        </div>
+        <div class="meter-block">
+          <div class="meter-label"><span>AMPLITUDE</span><span id="meterPct">0%</span></div>
+          <div class="meter-track"><div class="meter-fill" id="meterFill"></div></div>
+        </div>
+      </div>
+
+      <div id="spectrumBlock" style="display:none;">
+        <div class="spectrum" id="spectrumTrack"></div>
+        <div class="spectrum-labels" id="spectrumLabels"></div>
+        <div class="spectrum-legend">
+          <span id="legendMin">20 Hz</span>
+          <span id="legendInfo">—</span>
+          <span id="legendMax">500 Hz</span>
+        </div>
+      </div>
+
+      <div class="level-row" id="lengthRow">
+        <label for="lengthSlider">Length L</label>
+        <input type="range" id="lengthSlider" min="0.3" max="3.5" step="0.05" value="1.7">
+        <span class="value" id="lengthValue">1.70 m</span>
+      </div>
+
+      <div class="controls" id="freqControls">
+        <button class="step fine" data-step="-10">−10</button>
+        <button class="step fine" data-step="-1">−1</button>
+        <button class="step fine" data-step="-0.1">−0.1</button>
+        <button class="step fine" data-step="0.1">+0.1</button>
+        <button class="step fine" data-step="1">+1</button>
+        <button class="step fine" data-step="10">+10</button>
+      </div>
+      <div class="step-hint" id="stepHint">Arrow step: <strong id="stepHintValue">1</strong> Hz</div>
+      <div class="step-hint" id="lengthHint" hidden>Tip: click the slider, then use ← → to fine-tune the length to the millimeter.</div>
+
+      <div class="footer-row" id="footerRow">
+        <label class="hint-toggle" id="hintRow">
+          <input type="checkbox" id="hintToggle">
+          Beginner mode (shows direction)
+        </label>
+        <button class="icon-btn" id="muteBtn">🔊 Sound</button>
+      </div>
+
+      <div class="kbd-hint">
+        <kbd>←</kbd> <kbd>→</kbd> use the step selected above ·
+        <kbd>Shift</kbd> + arrows = 0.1 Hz ·
+        <kbd>Ctrl</kbd> + arrows = 10 Hz
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <h2 id="overlayTitle">Resonance found</h2>
+    <div id="overlayBody"></div>
+    <div class="overlay-buttons" id="overlayButtons"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ================= Physics =================
+  const V = 340; // speed of sound (m/s)
+
+  const LEVEL = {
+    tubeType: 'CF',   // 'CF' = integer harmonics (open-open or closed-closed tube) | 'OC' = open-closed (odd harmonics)
+    ends: 'CC',       // 'CC' closed-closed | 'OO' open-open | 'OC' open-closed — only drives the drawing
+    tint: '#9C7A57',
+    L: 1.7,
+    sigma: 3.0,
+    tolerance: 0.2,
+    fMin: 20,
+    fMax: 500,
+  };
+
+  function hexToRgb(hex){
+    const m = hex.replace('#', '');
+    const full = m.length === 3 ? m.split('').map(c => c + c).join('') : m;
+    const n = parseInt(full, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+  function darken(hex, factor){
+    const { r, g, b } = hexToRgb(hex);
+    return `rgb(${Math.round(r * factor)},${Math.round(g * factor)},${Math.round(b * factor)})`;
+  }
+  function rgba(hex, alpha){
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function gaussianNoise(sigma){
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sigma;
+  }
+
+  let resonances = [];  // [{ idx, m, f }, ...] sorted by ascending frequency
+  let freq = 100;
+  let locked = false;   // used only in sandbox mode
+  let muted = false;
+  let audioCtx = null, osc = null, gainNode = null;
+  let visualPhase = 0;
+  let toastTimer = null;
+
+  function modeFreq(tubeType, m, L){
+    return tubeType === 'OC' ? (m * V) / (4 * L) : (m * V) / (2 * L);
+  }
+
+  function buildResonances(){
+    resonances = [];
+    const { tubeType, L, fMin, fMax } = LEVEL;
+    for (let idx = 1; idx <= 60; idx++){
+      const m = tubeType === 'OC' ? (2 * idx - 1) : idx;
+      const f = modeFreq(tubeType, m, L);
+      if (f > fMax) break;
+      if (f >= fMin) resonances.push({ idx, m, f });
+    }
+  }
+
+  function responseAt(f){
+    let maxR = 0;
+    for (const r of resonances){
+      const d = f - r.f;
+      const v = Math.exp(-(d * d) / (2 * LEVEL.sigma * LEVEL.sigma));
+      if (v > maxR) maxR = v;
+    }
+    return maxR;
+  }
+
+  function closestResonance(f){
+    let best = null, bestD = Infinity;
+    for (const r of resonances){
+      const d = Math.abs(f - r.f);
+      if (d < bestD){ best = r; bestD = d; }
+    }
+    return best;
+  }
+
+  function randomStart(){
+    const { fMin, fMax } = LEVEL;
+    for (let attempt = 0; attempt < 100; attempt++){
+      const f = fMin + Math.random() * (fMax - fMin);
+      let ok = true;
+      for (const r of resonances){
+        if (Math.abs(f - r.f) < 6){ ok = false; break; }
+      }
+      if (ok) return Math.round(f * 10) / 10;
+    }
+    return fMin + 10;
+  }
+
+  function nodePositions(tubeType, idx){
+    const positions = [];
+    if (tubeType === 'OC'){
+      const m = 2 * idx - 1;
+      for (let k = 1; k < idx; k++) positions.push((2 * k) / m);
+    } else {
+      for (let k = 1; k < idx; k++) positions.push(k / idx);
+    }
+    return positions;
+  }
+
+  function modeShape(tubeType, idx, xNorm){
+    if (tubeType === 'OC'){
+      const m = 2 * idx - 1;
+      return Math.sin(m * Math.PI * xNorm / 2);
+    }
+    return Math.sin(idx * Math.PI * xNorm);
+  }
+
+  // ================= Levels =================
+  // ends only drives the drawing (CC/OO/OC); tubeType drives the formula (CF = integer harmonics, OC = odd)
+  const LEVELS = [
+    { title: "Kundt's tube (lab)", ends: 'CC', tubeType: 'CF', L: 1.7,
+      tolerance: 0.5, sigma: 3.5, modesToFind: 1, hints: true, timeLimit: null, parTime: 12,
+      tint: '#5EC8D8', image: 'assets/levels/kundt-tube.svg',
+      blurb: "A rigid tube closed at both ends, just like in a physics lab session." },
+
+    { title: 'A transverse flute', ends: 'OO', tubeType: 'CF', L: 0.66,
+      tolerance: 0.4, sigma: 3.2, modesToFind: 2, hints: true, timeLimit: null, parTime: 22,
+      tint: '#C9B37A', image: 'assets/levels/flute-traversiere.svg',
+      blurb: "Open at the mouthpiece and the far end: every harmonic can resonate." },
+
+    { title: 'A pan flute', ends: 'OC', tubeType: 'OC', L: 0.4,
+      tolerance: 0.35, sigma: 3.0, modesToFind: 2, hints: true, timeLimit: null, parTime: 25,
+      tint: '#8FBF6B', image: 'assets/levels/flute-de-pan.svg',
+      blurb: "A reed closed at its base, open at the top: only odd harmonics resonate." },
+
+    { title: 'A clarinet', ends: 'OC', tubeType: 'OC', L: 0.6,
+      tolerance: 0.3, sigma: 2.8, modesToFind: 3, hints: false, timeLimit: 100,
+      tint: '#3B2A20', image: 'assets/levels/clarinette.svg',
+      blurb: "The reed closes one end of the tube; the bell stays open." },
+
+    { title: 'A road culvert', ends: 'OO', tubeType: 'CF', L: 3.0,
+      tolerance: 0.25, sigma: 2.5, modesToFind: 3, hints: false, timeLimit: 90,
+      tint: '#8B8F94', image: 'assets/levels/ponceau.svg',
+      blurb: "A drainage pipe under a road: open at both ends, long and low-pitched." },
+
+    { title: 'A bottle', ends: 'OC', tubeType: 'OC', L: 0.22,
+      tolerance: 0.3, sigma: 2.6, modesToFind: 2, hints: false, timeLimit: 75, meterHidden: true,
+      tint: '#4FA3A0', image: 'assets/levels/bouteille.svg',
+      blurb: "Blowing across the neck excites the fundamental mode — no gauge this time, trust your ear." },
+
+    { title: 'A didgeridoo', ends: 'OO', tubeType: 'CF', L: 1.4,
+      tolerance: 0.22, sigma: 2.3, modesToFind: 2, hints: false, timeLimit: 75, meterHidden: true,
+      tint: '#7A4B2A', image: 'assets/levels/didgeridoo.svg',
+      blurb: "A long tube open at both ends. Still no gauge: listen for the sound to swell." },
+
+    { title: 'A stopped organ pipe', ends: 'OC', tubeType: 'OC', L: 1.0,
+      tolerance: 0.16, sigma: 2.0, modesToFind: 3, hints: false, timeLimit: 65,
+      tint: '#B08D57', image: 'assets/levels/orgue-bouche.svg',
+      blurb: "A stopped pipe sounds an octave lower than an open pipe of the same length." },
+
+    { title: 'An open organ pipe', ends: 'OO', tubeType: 'CF', L: [0.8, 2.0],
+      tolerance: 0.12, sigma: 1.8, modesToFind: 3, hints: false, timeLimit: 60,
+      tint: '#C9A227', image: 'assets/levels/orgue-ouvert.svg',
+      blurb: "Unknown length: track down the whole harmonic series." },
+
+    { title: 'Master resonator', ends: 'OC', tubeType: 'OC', L: [0.4, 3.0],
+      tolerance: 0.08, sigma: 1.5, modesToFind: 3, hints: false, timeLimit: 90, meterHidden: true,
+      tint: '#E8A33D',
+      blurb: "Extreme tolerance, no gauge: perfect pitch has to be earned." },
+
+    { title: 'A drinking straw', ends: 'OO', tubeType: 'CF', L: 0.19,
+      tolerance: 0.07, sigma: 1.3, modesToFind: 3, hints: false, timeLimit: 70, meterHidden: true,
+      tint: '#E85D9E', image: 'assets/levels/paille.svg',
+      blurb: "Very short, so very high-pitched: modes are spaced more than 800 Hz apart. No gauge." },
+
+    { title: 'A vacuum cleaner hose', ends: 'OO', tubeType: 'CF', L: [1.8, 2.6],
+      tolerance: 0.06, sigma: 1.2, modesToFind: 3, hints: false, timeLimit: 55, meterHidden: true,
+      tint: '#6B7A8F', image: 'assets/levels/aspirateur.svg',
+      blurb: "Long, floppy, unknown length: three modes to track down by ear." },
+
+    { title: 'The cathedral bourdon', ends: 'OC', tubeType: 'OC', L: [2.0, 4.0],
+      tolerance: 0.05, sigma: 1.0, modesToFind: 3, hints: false, timeLimit: 50, meterHidden: true,
+      tint: '#4A3B6B', image: 'assets/levels/grand-bourdon.svg',
+      blurb: "A cathedral-sized pipe, deep and oversized. Record tolerance, no gauge: the final challenge." },
+  ];
+
+  const SAVE_KEY = 'resonance_game_save_v1';
+  function loadProgress(){
+    try{
+      const p = JSON.parse(localStorage.getItem(SAVE_KEY));
+      if (p && typeof p.unlocked === 'number'){
+        p.notebook = p.notebook || {};
+        p.lengthStars = p.lengthStars || {};
+        return p;
+      }
+    }catch(e){}
+    return { unlocked: 1, stars: {}, notebook: {}, lengthStars: {} };
+  }
+  function saveProgress(p){
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify(p)); }catch(e){}
+  }
+  let progress = loadProgress();
+
+  function computeLevelRange(tubeType, L, modesToFind){
+    const f1 = modeFreq(tubeType, tubeType === 'OC' ? 1 : 1, L);
+    const lastM = tubeType === 'OC' ? (2 * modesToFind - 1) : modesToFind;
+    const fLast = modeFreq(tubeType, lastM, L);
+    const fMax = Math.min(3000, Math.max(200, fLast * 1.35));
+    const fMin = Math.max(15, Math.min(30, f1 * 0.5));
+    return { fMin, fMax };
+  }
+
+  function computeSandboxRange(L){
+    const f1 = V / (2 * L);
+    const fMax = Math.min(4000, Math.max(150, f1 * 5.5));
+    return { fMin: 20, fMax };
+  }
+
+  function randRange(a, b){ return a + Math.random() * (b - a); }
+
+  function endsLabel(ends){
+    if (ends === 'OO') return 'open at both ends';
+    if (ends === 'OC') return 'open-closed';
+    return 'closed at both ends';
+  }
+
+  const KUNDT = {
+    L: 1.2, tubeType: 'CF', ends: 'CC', tint: '#5EC8D8', image: 'assets/levels/kundt-tube.svg',
+    idxPool: [3, 4, 5, 6], // modes with enough internal nodes to measure
+    easy: { tolerance: 0.3, sigma: 2.5, trials: 1 },
+    full: { tolerance: 0.2, sigma: 2.0, trials: 3 },
+  };
+
+  // "Find the length" levels: the frequency is fixed, you search for L (always available, no sequential unlocking).
+  // tolerance/sigma are computed on level entry (see enterLengthLevel) so they stay reachable with the slider's step.
+  const FINEST_L_STEP = 0.01;
+  const LENGTH_LEVELS = [
+    { title: 'A slide whistle', ends: 'OO', tubeType: 'CF', tint: '#5EC8D8', image: 'assets/levels/flute-traversiere.svg',
+      targetFreq: 440, Lrange: [0.15, 1.2], timeLimit: null, parTime: 25,
+      blurb: "A slide whistle changes length to change pitch. Find L to get an A (440 Hz)." },
+    { title: 'A recorder', ends: 'OO', tubeType: 'CF', tint: '#C9B37A', image: 'assets/levels/flute-de-pan.svg',
+      targetFreq: 523.3, Lrange: [0.1, 0.9], timeLimit: null, parTime: 20,
+      blurb: "Find L to get a high C (523 Hz) on this flute, open at both ends." },
+    { title: 'A slide trombone', ends: 'OC', tubeType: 'OC', tint: '#B08D57', image: 'assets/levels/clarinette.svg',
+      targetFreq: 233, Lrange: [0.2, 2.2], timeLimit: 60,
+      blurb: "The slide lengthens the tube. Find L to get a B♭ (233 Hz)." },
+    { title: 'A foghorn', ends: 'OC', tubeType: 'OC', tint: '#6B7A8F', image: 'assets/levels/aspirateur.svg',
+      targetFreq: 110, Lrange: [0.5, 3.0], timeLimit: 60,
+      blurb: "Deep and powerful. Find L to get a low A (110 Hz)." },
+    { title: 'A duck call', ends: 'OC', tubeType: 'OC', tint: '#8FBF6B', image: 'assets/levels/paille.svg',
+      targetFreq: 880, Lrange: [0.05, 0.5], timeLimit: 40,
+      blurb: "Very short, so very sensitive to length. Find L to get a high A (880 Hz)." },
+    { title: 'Mystery system', ends: null, tubeType: null, tint: '#E8A33D', image: null,
+      targetFreq: null, Lrange: [0.15, 2.5], timeLimit: 40,
+      blurb: "Both the tube type AND the frequency are unknown each time: the final challenge of this lab." },
+  ];
+
+  // ================= Game state =================
+  const Game = {
+    mode: null,          // 'sandbox' | 'level' | 'kundt' | 'findL'
+    levelIndex: null,
+    lengthIndex: null,
+    lengthTarget: null,
+    foundIdx: new Set(),
+    target: [],
+    timeLimit: null,
+    timeLeft: 0,
+    timerId: null,
+    startTs: 0,
+    predictionAsked: false,
+    kundtMode: 'easy',     // 'easy' | 'full'
+    kundtUsedIdx: new Set(),
+    kundtTrials: [],
+    kundtClicks: [],
+  };
+  let missionLevelIndex = null;
+
+  // ================= DOM =================
+  const menuScreen    = document.getElementById('menuScreen');
+  const gameScreen     = document.getElementById('gameScreen');
+  const missionScreen  = document.getElementById('missionScreen');
+  const levelGrid      = document.getElementById('levelGrid');
+  const lengthLevelGrid = document.getElementById('lengthLevelGrid');
+  const sandboxOO      = document.getElementById('sandboxOO');
+  const sandboxOC      = document.getElementById('sandboxOC');
+  const sandboxCC      = document.getElementById('sandboxCC');
+  const kundtEasyCard  = document.getElementById('kundtEasyCard');
+  const kundtFullCard  = document.getElementById('kundtFullCard');
+  const unlockAllBtn   = document.getElementById('unlockAllBtn');
+  const missionMenuBtn = document.getElementById('missionMenuBtn');
+  const missionImg     = document.getElementById('missionImg');
+  const missionImgBox  = document.getElementById('missionImgBox');
+  const missionTitle   = document.getElementById('missionTitle');
+  const missionOptions = document.getElementById('missionOptions');
+  const missionFeedback = document.getElementById('missionFeedback');
+  const missionContinueBtn = document.getElementById('missionContinueBtn');
+  const menuBtn        = document.getElementById('menuBtn');
+  const levelName      = document.getElementById('levelName');
+  const levelIconEl    = document.getElementById('levelIcon');
+  const tubeBgEl       = document.getElementById('tubeBg');
+  const levelSub       = document.getElementById('levelSub');
+  const modePipsEl     = document.getElementById('modePips');
+  const timebarWrap    = document.getElementById('timebarWrap');
+  const timebarFill    = document.getElementById('timebarFill');
+  const timebarLabel   = document.getElementById('timebarLabel');
+  const toastEl        = document.getElementById('toast');
+  const gameSubtitle   = document.getElementById('gameSubtitle');
+
+  const freqValueEl   = document.getElementById('freqValue');
+  const freqLabelEl    = document.getElementById('freqLabel');
+  const freqManualEl   = document.getElementById('freqManual');
+  const freqControlsEl = document.getElementById('freqControls');
+  const stepHintEl     = document.getElementById('stepHint');
+  const lengthHintEl   = document.getElementById('lengthHint');
+  const freqInput      = document.getElementById('freqInput');
+  const freqGoBtn      = document.getElementById('freqGoBtn');
+  const stepHintValue  = document.getElementById('stepHintValue');
+  const meterBlockEl  = document.querySelector('.meter-block');
+  const meterFillEl   = document.getElementById('meterFill');
+  const meterPctEl    = document.getElementById('meterPct');
+  const overlayEl      = document.getElementById('overlay');
+  const overlayTitleEl = document.getElementById('overlayTitle');
+  const overlayBodyEl  = document.getElementById('overlayBody');
+  const overlayButtonsEl = document.getElementById('overlayButtons');
+  const hintToggle    = document.getElementById('hintToggle');
+  const hintRow        = document.getElementById('hintRow');
+  const footerRow       = document.getElementById('footerRow');
+  const muteBtn        = document.getElementById('muteBtn');
+  const canvas         = document.getElementById('tubeCanvas');
+  const ctx            = canvas.getContext('2d');
+  const spectrumTrack  = document.getElementById('spectrumTrack');
+  const spectrumLabels = document.getElementById('spectrumLabels');
+  const spectrumBlock  = document.getElementById('spectrumBlock');
+  const lengthRow      = document.getElementById('lengthRow');
+  const lengthSlider  = document.getElementById('lengthSlider');
+  const lengthValue   = document.getElementById('lengthValue');
+  const legendMin     = document.getElementById('legendMin');
+  const legendMax     = document.getElementById('legendMax');
+  const legendInfo    = document.getElementById('legendInfo');
+
+  function fmt(f){ return f.toFixed(1).padStart(5, '0'); }
+
+  function setLevelIcon(src){
+    if (src){
+      levelIconEl.src = src;
+      levelIconEl.hidden = false;
+      tubeBgEl.src = src;
+      tubeBgEl.hidden = false;
+    } else {
+      levelIconEl.hidden = true;
+      levelIconEl.removeAttribute('src');
+      tubeBgEl.hidden = true;
+      tubeBgEl.removeAttribute('src');
+    }
+  }
+
+  function setFreqControlsVisible(visible){
+    freqLabelEl.textContent = visible ? 'FREQUENCY' : 'TARGET FREQUENCY';
+    freqManualEl.hidden = !visible;
+    freqControlsEl.hidden = !visible;
+    stepHintEl.hidden = !visible;
+    lengthHintEl.hidden = visible;
+  }
+
+  function endsExplanation(ends){
+    if (ends === 'OO') return "Both ends are open to the air: every harmonic (n = 1, 2, 3…) can resonate.";
+    if (ends === 'OC') return "One end is closed, the other open: only odd harmonics (n = 1, 3, 5…) resonate.";
+    return "Both ends are closed/rigid: just like an open-open tube, every harmonic resonates.";
+  }
+
+  function seriesLabel(tubeType){
+    return tubeType === 'OC' ? 'odd harmonics (n = 1, 3, 5…)' : 'integer harmonics (n = 1, 2, 3…)';
+  }
+
+  function levelFundamental(level){
+    const L = Array.isArray(level.L) ? (level.L[0] + level.L[1]) / 2 : level.L;
+    return modeFreq(level.tubeType, 1, L);
+  }
+
+  function modeShapeSVG(tubeType, idx, color){
+    const left = 14, right = 146, midY = 50, amp = 28, steps = 48;
+    let d = '';
+    for (let i = 0; i <= steps; i++){
+      const xNorm = i / steps;
+      const x = left + xNorm * (right - left);
+      const y = midY - amp * modeShape(tubeType, idx, xNorm);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    let nodes = '';
+    nodePositions(tubeType, idx).forEach((xNorm) => {
+      const x = left + xNorm * (right - left);
+      nodes += `<circle cx="${x.toFixed(1)}" cy="${midY}" r="3" fill="${color}"/>`;
+    });
+    return `<svg viewBox="0 0 160 100">
+      <line x1="${left}" y1="${midY}" x2="${right}" y2="${midY}" stroke="#2A3B5C" stroke-width="2"/>
+      <path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+      ${nodes}
+    </svg>`;
+  }
+
+  function revealRowHTML({ tubeType, m, idx, L, f, image, tint }){
+    const color = tint || '#5EC8D8';
+    const objectPanel = image
+      ? `<div class="reveal-panel"><div class="reveal-box"><img src="${image}" alt=""></div><span>Object</span></div>`
+      : '';
+    const shapePanel = `<div class="reveal-panel"><div class="reveal-box">${modeShapeSVG(tubeType, idx, color)}</div><span>Mode n=${m}</span></div>`;
+    const formulaPanel = `<div class="reveal-panel formula-panel"><div class="formula">${formulaFor(tubeType, m, L, f)}</div><span>Formula</span></div>`;
+    return `<div class="reveal-row">${objectPanel}${shapePanel}${formulaPanel}</div>`;
+  }
+
+  // ================= Generic overlay =================
+  function showOverlay({ title, bodyHTML, buttons }){
+    overlayTitleEl.textContent = title;
+    overlayBodyEl.innerHTML = bodyHTML;
+    overlayButtonsEl.innerHTML = '';
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = b.primary ? 'replay-btn' : 'ghost-btn';
+      btn.textContent = b.label;
+      btn.onclick = b.onClick;
+      overlayButtonsEl.appendChild(btn);
+    });
+    overlayEl.classList.add('show');
+  }
+  function hideOverlay(){ overlayEl.classList.remove('show'); }
+
+  function starsHTML(n){
+    let s = '';
+    for (let i = 0; i < 3; i++) s += i < n ? '★' : '☆';
+    return `<div class="stars-row">${s}</div>`;
+  }
+
+  function showToast(text){
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1400);
+  }
+
+  // ================= Spectrum =================
+  function rebuildSpectrum(list){
+    spectrumTrack.innerHTML = '';
+    spectrumLabels.innerHTML = '';
+    const cursor = document.createElement('div');
+    cursor.className = 'spectrum-cursor';
+    cursor.id = 'spectrumCursor';
+
+    for (const r of list){
+      const pct = ((r.f - LEVEL.fMin) / (LEVEL.fMax - LEVEL.fMin)) * 100;
+
+      const tick = document.createElement('div');
+      tick.className = 'spectrum-tick';
+      tick.style.left = pct + '%';
+      tick.dataset.idx = r.idx;
+      spectrumTrack.appendChild(tick);
+
+      const lab = document.createElement('div');
+      lab.className = 'spectrum-label';
+      lab.style.left = pct + '%';
+      lab.dataset.idx = r.idx;
+      lab.innerHTML = `n=${r.m}<span class="f">${Math.round(r.f)} Hz</span>`;
+      spectrumLabels.appendChild(lab);
+    }
+    spectrumTrack.appendChild(cursor);
+
+    legendMin.textContent = Math.round(LEVEL.fMin) + ' Hz';
+    legendMax.textContent = Math.round(LEVEL.fMax) + ' Hz';
+    legendInfo.textContent = list.length + ' mode' + (list.length > 1 ? 's' : '');
+  }
+
+  function updateSpectrum(list){
+    const cursor = document.getElementById('spectrumCursor');
+    if (cursor){
+      const pct = ((freq - LEVEL.fMin) / (LEVEL.fMax - LEVEL.fMin)) * 100;
+      cursor.style.left = Math.max(0, Math.min(100, pct)) + '%';
+    }
+    const ticks = spectrumTrack.querySelectorAll('.spectrum-tick');
+    ticks.forEach(t => {
+      const idx = parseInt(t.dataset.idx, 10);
+      const r = list.find(x => x.idx === idx);
+      if (!r) return;
+      t.classList.toggle('hot', Math.abs(freq - r.f) < LEVEL.sigma * 1.5);
+      t.classList.toggle('done', Game.mode === 'level' && Game.foundIdx.has(idx));
+    });
+    const labels = spectrumLabels.querySelectorAll('.spectrum-label');
+    labels.forEach(l => {
+      const idx = parseInt(l.dataset.idx, 10);
+      const r = list.find(x => x.idx === idx);
+      if (!r) return;
+      l.classList.toggle('hot', Math.abs(freq - r.f) < LEVEL.sigma * 1.5);
+    });
+  }
+
+  function currentSpectrumList(){
+    return Game.mode === 'level' ? Game.target : resonances;
+  }
+
+  function updateBeginnerMode(){
+    const allowed = Game.mode === 'sandbox' || (Game.mode === 'level' && LEVELS[Game.levelIndex].hints);
+    hintRow.style.display = allowed ? 'flex' : 'none';
+    footerRow.classList.toggle('no-hint', !allowed);
+    const on = allowed && hintToggle.checked;
+    spectrumBlock.style.display = on ? 'block' : 'none';
+    spectrumLabels.classList.toggle('show', on);
+  }
+
+  // ================= Display =================
+  function updateReadout(){
+    const r = responseAt(freq);
+    freqValueEl.innerHTML = fmt(freq) + '<span class="freq-unit">Hz</span>';
+    freqValueEl.classList.toggle('locked', locked);
+    const pct = Math.round(r * 100);
+    meterFillEl.style.width = pct + '%';
+    meterPctEl.textContent = pct + '%';
+
+    if (hintToggle.checked && hintRow.style.display !== 'none' && !locked){
+      const cl = closestResonance(freq);
+      if (cl){
+        const dir = freq < cl.f ? 'higher →' : freq > cl.f ? 'lower ←' : 'right on it';
+        meterPctEl.textContent = pct + '% · ' + dir;
+      }
+    }
+
+    updateSpectrum(currentSpectrumList());
+  }
+
+  function updateModePips(){
+    modePipsEl.innerHTML = '';
+    if (Game.mode !== 'level'){ return; }
+    Game.target.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'pip' + (Game.foundIdx.has(t.idx) ? ' found' : '');
+      el.textContent = t.m;
+      modePipsEl.appendChild(el);
+    });
+  }
+
+  // ================= Audio =================
+  function ensureAudio(){
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0;
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc.frequency.value = freq;
+    osc.start();
+  }
+
+  function updateAudio(){
+    if (!audioCtx) return;
+    const r = responseAt(freq);
+    osc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.03);
+    // The swept tone stays audible at all times (like a speaker driving the tube);
+    // it swells noticeably when the frequency lands on a resonance.
+    const baseGain = 0.045;
+    const boostGain = r * 0.18;
+    const targetGain = muted ? 0 : (baseGain + boostGain);
+    gainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.05);
+  }
+
+  function silenceAudio(){
+    if (!audioCtx) return;
+    gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+  }
+
+  function playChime(targetFreq){
+    if (!audioCtx || muted) return;
+    const notes = [targetFreq, targetFreq * 1.25, targetFreq * 1.5];
+    notes.forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      g.gain.value = 0;
+      o.connect(g); g.connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime + i * 0.08;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.1, t0 + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0005, t0 + 1.1);
+      o.start(t0);
+      o.stop(t0 + 1.2);
+    });
+  }
+
+  // ================= Formula =================
+  function formulaFor(tubeType, m, L, f){
+    const subs = '₀₁₂₃₄₅₆₇₈₉';
+    const sub = m.toString().split('').map(d => subs[+d]).join('');
+    if (tubeType === 'OC'){
+      return `f${sub} = n · v / (4L)   [n = ${m}, odd]\n` +
+             `     = ${m} × ${V} / (4 × ${L.toFixed(2)})\n` +
+             `     = ${f.toFixed(1)} Hz`;
+    }
+    return `f${sub} = n · v / (2L)   [n = ${m}]\n` +
+           `     = ${m} × ${V} / (2 × ${L.toFixed(2)})\n` +
+           `     = ${f.toFixed(1)} Hz`;
+  }
+
+  // ================= Game loop =================
+  let activeStep = 1;
+
+  function canTune(){
+    if (overlayEl.classList.contains('show')) return false;
+    if (Game.mode === 'findL') return false;
+    if ((Game.mode === 'sandbox' || Game.mode === 'kundt') && locked) return false;
+    return true;
+  }
+
+  function step(delta){
+    if (!canTune()) return;
+    ensureAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    freq = Math.min(LEVEL.fMax, Math.max(LEVEL.fMin, Math.round((freq + delta) * 10) / 10));
+    checkResonanceHit();
+    updateReadout();
+    updateAudio();
+  }
+
+  function setFrequency(value){
+    if (!canTune()) return;
+    if (isNaN(value)) return;
+    ensureAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    freq = Math.min(LEVEL.fMax, Math.max(LEVEL.fMin, Math.round(value * 10) / 10));
+    checkResonanceHit();
+    updateReadout();
+    updateAudio();
+  }
+
+  function setActiveStep(v){
+    activeStep = Math.abs(v);
+    stepHintValue.textContent = activeStep;
+    document.querySelectorAll('button.step').forEach(btn => {
+      btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.step)) === activeStep);
+    });
+  }
+
+  function checkResonanceHit(){
+    const hit = resonances.find(r => Math.abs(freq - r.f) <= LEVEL.tolerance);
+    if (!hit) return;
+
+    if (Game.mode === 'sandbox'){
+      if (locked) return;
+      locked = true;
+      freq = hit.f;
+      updateReadout();
+      updateAudio();
+      setTimeout(() => showSandboxFound(hit), 350);
+    } else if (Game.mode === 'level'){
+      if (Game.foundIdx.has(hit.idx)) return;
+      const isTarget = Game.target.some(t => t.idx === hit.idx);
+      if (!isTarget) return;
+      Game.foundIdx.add(hit.idx);
+      playChime(hit.f);
+      showToast(`Mode n=${hit.m} found · ${Math.round(hit.f)} Hz`);
+      freqValueEl.classList.remove('pulse'); void freqValueEl.offsetWidth; freqValueEl.classList.add('pulse');
+      updateModePips();
+      if (Game.foundIdx.size >= Game.target.length){
+        finishLevel();
+      } else if (!Game.predictionAsked && Game.target.length >= 3 && Game.foundIdx.size === 2 &&
+                 Game.foundIdx.has(Game.target[0].idx) && Game.foundIdx.has(Game.target[1].idx)){
+        Game.predictionAsked = true;
+        setTimeout(() => askPredictNext(), 500);
+      }
+    } else if (Game.mode === 'kundt'){
+      if (locked) return;
+      if (!KUNDT.idxPool.includes(hit.idx)){
+        showToast(`Mode n=${hit.idx}: not enough internal nodes to measure. Look for another mode.`);
+        return;
+      }
+      if (Game.kundtMode === 'full' && Game.kundtUsedIdx.has(hit.idx)){
+        showToast(`Mode n=${hit.idx} already measured this experiment — look for another one.`);
+        return;
+      }
+      locked = true;
+      Game.kundtUsedIdx.add(hit.idx);
+      freq = hit.f;
+      updateReadout();
+      updateAudio();
+      setTimeout(() => showKundtMeasurement(hit), 350);
+    }
+  }
+
+  function showSandboxFound(r){
+    const desc = `You've reached mode n = ${r.m}.`;
+    const body = `<p>${desc}</p>` +
+      revealRowHTML({ tubeType: LEVEL.tubeType, m: r.m, idx: r.idx, L: LEVEL.L, f: r.f, image: SANDBOX_IMAGE[LEVEL.ends], tint: LEVEL.tint }) +
+      `<p>Tube length L = ${LEVEL.L.toFixed(2)} m · speed of sound v = ${V} m/s</p>`;
+    showOverlay({
+      title: 'Resonance found',
+      bodyHTML: body,
+      buttons: [
+        { label: 'Replay', primary: true, onClick: () => {
+            hideOverlay();
+            locked = false;
+            freq = randomStart();
+            updateReadout();
+            updateAudio();
+          } },
+        { label: 'Menu', onClick: backToMenu },
+      ],
+    });
+    playChime(r.f);
+  }
+
+  // ---------- Predict what's next ----------
+  function buildPredictOptions(t1, t2, t3){
+    const correct = Math.round(t3.f);
+    const trap = Math.round(t1.f * (t2.m + 1));
+    let distractor = Math.round(correct + (correct - t2.f) * 0.5);
+    const used = new Set([correct]);
+    const opts = [correct];
+    [trap, distractor].forEach((v) => {
+      let vv = v;
+      while (used.has(vv)) vv += 7;
+      used.add(vv);
+      opts.push(vv);
+    });
+    for (let i = opts.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    return { opts, correct };
+  }
+
+  function askPredictNext(){
+    // Guard: if the player found the remaining modes before this delayed prompt fired,
+    // the level is already complete — don't clobber the completion overlay.
+    if (Game.mode !== 'level' || Game.foundIdx.size >= Game.target.length) return;
+    const [t1, t2, t3] = Game.target;
+    const { opts, correct } = buildPredictOptions(t1, t2, t3);
+    showOverlay({
+      title: "Guess what's next",
+      bodyHTML: `<p>You found ${Math.round(t1.f)} Hz and ${Math.round(t2.f)} Hz.</p><p>What do you think the next mode's frequency will be?</p>`,
+      buttons: opts.map((v) => ({ label: v + ' Hz', onClick: () => revealPredictAnswer(v, correct) })),
+    });
+  }
+
+  function revealPredictAnswer(chosen, correct){
+    const ok = chosen === correct;
+    const level = LEVELS[Game.levelIndex];
+    showOverlay({
+      title: ok ? 'Nice catch!' : 'Not quite',
+      bodyHTML: `<p>The correct answer was <strong>${correct} Hz</strong>.</p><p>${endsExplanation(level.ends)}</p>`,
+      buttons: [{ label: 'Keep searching', primary: true, onClick: hideOverlay }],
+    });
+  }
+
+  // ---------- Kundt's tube ----------
+  function buildKundtSVG(totalCm, jitteredCm){
+    const w = 480, h = 74;
+    const marginX = 20;
+    const usableW = w - marginX * 2;
+    let ticks = '';
+    for (let c = 0; c <= totalCm + 0.001; c += 10){
+      const x = marginX + (c / totalCm) * usableW;
+      ticks += `<line x1="${x}" y1="30" x2="${x}" y2="40" stroke="#5b6b8c" stroke-width="1"/>`;
+      if (Math.round(c) % 20 === 0){
+        ticks += `<text x="${x}" y="54" font-size="9" fill="#8892A6" text-anchor="middle" font-family="'JetBrains Mono',monospace">${Math.round(c)}</text>`;
+      }
+    }
+    let piles = '';
+    jitteredCm.forEach((cm) => {
+      const x = marginX + (cm / totalCm) * usableW;
+      piles += `<path d="M ${x - 7} 30 L ${x + 7} 30 L ${x} 17 Z" fill="${LEVEL.tint}" opacity="0.9"/>`;
+    });
+    const html = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">
+      <rect x="0" y="0" width="${w}" height="${h}" fill="#0A1120" stroke="#223252"/>
+      <line x1="${marginX}" y1="30" x2="${w - marginX}" y2="30" stroke="#2A3B5C" stroke-width="3"/>
+      ${ticks}
+      ${piles}
+      <text x="${marginX}" y="68" font-size="9" fill="#8892A6" font-family="'JetBrains Mono',monospace">cm</text>
+    </svg>`;
+    return { html, meta: { marginX, usableW, totalCm, viewW: w } };
+  }
+
+  function handleKundtRulerClick(evt, meta){
+    const wrap = evt.currentTarget;
+    const rect = wrap.getBoundingClientRect();
+    const fracX = (evt.clientX - rect.left) / rect.width;
+    const svgX = fracX * meta.viewW;
+    let cm = (svgX - meta.marginX) / meta.usableW * meta.totalCm;
+    cm = Math.max(0, Math.min(meta.totalCm, cm));
+    Game.kundtClicks.push(cm);
+    if (Game.kundtClicks.length > 2) Game.kundtClicks.shift();
+    renderKundtClickMarkers(meta);
+  }
+
+  function renderKundtClickMarkers(meta){
+    const wrap = document.getElementById('kundtRulerWrap');
+    if (!wrap) return;
+    wrap.querySelectorAll('.kundt-click-marker').forEach((el) => el.remove());
+    Game.kundtClicks.forEach((cm) => {
+      const pct = ((meta.marginX + (cm / meta.totalCm) * meta.usableW) / meta.viewW) * 100;
+      const marker = document.createElement('div');
+      marker.className = 'kundt-click-marker';
+      marker.style.left = pct + '%';
+      wrap.appendChild(marker);
+    });
+    const dxEl = document.getElementById('kundtMeasuredDx');
+    if (dxEl){
+      dxEl.textContent = Game.kundtClicks.length === 2
+        ? Math.abs(Game.kundtClicks[1] - Game.kundtClicks[0]).toFixed(1) + ' cm'
+        : (Game.kundtClicks.length === 1 ? 'click a 2nd pile…' : '—');
+    }
+  }
+
+  function checkKundtAnswer(hit){
+    const fb = document.getElementById('kundtFeedback');
+    if (!fb) return;
+    if (Game.kundtClicks.length < 2){
+      fb.innerHTML = '<span style="color:var(--gold);">Click two powder piles to measure Δx before checking.</span>';
+      return;
+    }
+    const measuredDxCm = Math.abs(Game.kundtClicks[1] - Game.kundtClicks[0]);
+    const vInput = parseFloat(document.getElementById('kundtV').value);
+    const v = !isNaN(vInput) ? vInput : 2 * hit.f * (measuredDxCm / 100);
+    const errPct = Math.abs(v - V) / V * 100;
+
+    Game.kundtTrials.push({ idx: hit.idx, f: hit.f, measuredDxCm, v });
+
+    const cfg = KUNDT[Game.kundtMode];
+    const isLast = Game.kundtTrials.length >= cfg.trials;
+    const qualityMsg = errPct <= 3
+      ? 'Excellent — very close to the reference value.'
+      : errPct <= 8
+      ? 'Correct, within the usual experimental margin of error.'
+      : 'Pretty far off — measurement imprecision explains the gap, just like in a real lab.';
+
+    fb.innerHTML = `<p>Measured Δx ≈ ${measuredDxCm.toFixed(1)} cm → v ≈ ${v.toFixed(0)} m/s.</p><p>${qualityMsg}</p>`;
+
+    overlayButtonsEl.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.className = 'replay-btn';
+    btn.textContent = isLast ? 'See the summary' : `Next measurement (${Game.kundtTrials.length + 1}/${cfg.trials}) →`;
+    btn.onclick = isLast ? showKundtSummary : () => { hideOverlay(); startKundtSearch(); };
+    overlayButtonsEl.appendChild(btn);
+  }
+
+  function showKundtMeasurement(hit){
+    const totalCm = LEVEL.L * 100;
+    const jitterSigma = Math.max(0.4, totalCm * 0.01);
+    const trueCmList = nodePositions('CF', hit.idx).map((xNorm) => xNorm * totalCm);
+    const jitteredCm = trueCmList.map((cm) => Math.min(totalCm - 0.5, Math.max(0.5, cm + gaussianNoise(jitterSigma))));
+    const { html: svgHtml, meta } = buildKundtSVG(totalCm, jitteredCm);
+
+    Game.kundtClicks = [];
+    const cfg = KUNDT[Game.kundtMode];
+    const nInterior = hit.idx - 1;
+    const trialLine = cfg.trials > 1 ? `<p class="kundt-trial-label">Measurement ${Game.kundtTrials.length + 1} / ${cfg.trials}</p>` : '';
+
+    const body = `
+      ${trialLine}
+      <p>Frequency found: <strong>${hit.f.toFixed(1)} Hz</strong> (mode n = ${hit.idx}, ${nInterior} internal node${nInterior > 1 ? 's' : ''}).</p>
+      <div class="kundt-svg-wrap" id="kundtRulerWrap">${svgHtml}</div>
+      <p>Powder collects at the nodes, with a bit of scatter just like in a real experiment. <strong>Click two consecutive piles</strong> to measure Δx.</p>
+      <div class="kundt-measured">Measured Δx: <strong id="kundtMeasuredDx">—</strong></div>
+      <div class="kundt-inputs">
+        <label>v (m/s) <input type="number" id="kundtV" step="1"></label>
+      </div>
+      <div class="kundt-feedback" id="kundtFeedback"></div>
+    `;
+
+    showOverlay({
+      title: 'Resonance locked — take a measurement!',
+      bodyHTML: body,
+      buttons: [
+        { label: 'Check', primary: true, onClick: () => checkKundtAnswer(hit) },
+        { label: 'Menu', onClick: backToMenu },
+      ],
+    });
+
+    const wrap = document.getElementById('kundtRulerWrap');
+    if (wrap) wrap.addEventListener('click', (evt) => handleKundtRulerClick(evt, meta));
+
+    playChime(hit.f);
+  }
+
+  function showKundtSummary(){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    const trials = Game.kundtTrials;
+    const avgV = trials.reduce((s, t) => s + t.v, 0) / trials.length;
+    const errPct = Math.abs(avgV - V) / V * 100;
+    const rows = trials.map((t, i) => `<tr><td>${i + 1}</td><td>n=${t.idx}</td><td>${t.f.toFixed(0)} Hz</td><td>${t.measuredDxCm.toFixed(1)} cm</td><td>${t.v.toFixed(0)} m/s</td></tr>`).join('');
+    const body = `
+      <div class="kundt-summary-wrap"><table class="kundt-summary-table">
+        <thead><tr><th>#</th><th>Mode</th><th>f</th><th>Δx</th><th>v</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <p>Average of ${trials.length} measurement${trials.length > 1 ? 's' : ''}: <strong>v ≈ ${avgV.toFixed(0)} m/s</strong> (${errPct.toFixed(1)}% off the reference value, ${V} m/s).</p>
+      ${trials.length > 1 ? '<p>Just like in a real lab, averaging several independent measurements reduces the effect of individual reading errors.</p>' : ''}
+    `;
+    showOverlay({
+      title: Game.kundtMode === 'full' ? 'Experiment summary' : 'Result',
+      bodyHTML: body,
+      buttons: [
+        { label: 'Start over', primary: true, onClick: () => { hideOverlay(); enterKundt(Game.kundtMode); } },
+        { label: 'Menu', onClick: backToMenu },
+      ],
+    });
+  }
+
+  function startKundtSearch(){
+    hideOverlay();
+    const maxIdx = Math.max(...KUNDT.idxPool);
+    const range = computeLevelRange(KUNDT.tubeType, KUNDT.L, maxIdx);
+    LEVEL.fMin = range.fMin; LEVEL.fMax = range.fMax;
+    buildResonances();
+    locked = false;
+    freq = randomStart();
+
+    const cfg = KUNDT[Game.kundtMode];
+    const trialTag = cfg.trials > 1 ? ` — measurement ${Game.kundtTrials.length + 1}/${cfg.trials}` : '';
+    gameSubtitle.textContent = 'Find a natural mode (at least 2 nodes) to reveal the powder to measure.';
+    levelName.textContent = "Kundt's tube" + (Game.kundtMode === 'full' ? ' — full experiment' : ' — easy mode');
+    setLevelIcon(KUNDT.image);
+    levelSub.textContent = `Tube closed at both ends · L = ${LEVEL.L.toFixed(2)} m${trialTag}`;
+
+    updateBeginnerMode();
+    rebuildSpectrum(resonances);
+    updateReadout();
+    updateAudio();
+    setActiveStep(1);
+    freqInput.value = '';
+  }
+
+  function enterKundt(mode){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    hideOverlay();
+    setFreqControlsVisible(true);
+    Game.mode = 'kundt';
+    Game.levelIndex = null;
+    Game.kundtMode = mode;
+    Game.kundtUsedIdx = new Set();
+    Game.kundtTrials = [];
+
+    LEVEL.tubeType = KUNDT.tubeType;
+    LEVEL.ends = KUNDT.ends;
+    LEVEL.tint = KUNDT.tint;
+    LEVEL.L = KUNDT.L;
+    const cfg = KUNDT[mode];
+    LEVEL.sigma = cfg.sigma;
+    LEVEL.tolerance = cfg.tolerance;
+
+    timebarWrap.style.display = 'none';
+    lengthRow.style.display = 'none';
+    modePipsEl.innerHTML = '';
+    meterBlockEl.style.display = '';
+    hintToggle.checked = false;
+
+    startKundtSearch();
+    showScreen(gameScreen);
+    resizeCanvas();
+  }
+
+  function enterLengthLevel(i){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    hideOverlay();
+    setFreqControlsVisible(false);
+    Game.mode = 'findL';
+    Game.lengthIndex = i;
+    const level = LENGTH_LEVELS[i];
+
+    // "Mystery system": both tube type AND frequency are randomized on every attempt.
+    const tubeType = level.tubeType || (Math.random() < 0.5 ? 'CF' : 'OC');
+    const ends = level.ends || (tubeType === 'OC' ? 'OC' : (Math.random() < 0.5 ? 'OO' : 'CC'));
+    LEVEL.tubeType = tubeType;
+    LEVEL.ends = ends;
+    LEVEL.tint = level.tint;
+
+    const k = tubeType === 'OC' ? 4 : 2;
+    let answerL, target;
+    if (level.targetFreq){
+      target = level.targetFreq;
+      answerL = V / (k * target);
+    } else {
+      answerL = randRange(level.Lrange[0], level.Lrange[1]);
+      target = Math.round((V / (k * answerL)) * 10) / 10;
+    }
+    // Tolerance/peak width derived from the sensitivity of f(L) around the answer,
+    // so they stay reachable with the FINEST_L_STEP slider step (otherwise the valid
+    // window could be narrower than one slider notch, making the level unsolvable).
+    LEVEL.tolerance = Math.max(0.3, Math.round(FINEST_L_STEP * V / (k * answerL * answerL) * 1.5 * 10) / 10);
+    LEVEL.sigma = LEVEL.tolerance * 2.5;
+
+    Game.lengthTarget = target;
+    freq = target;
+    LEVEL.fMin = Math.max(5, target / 8);
+    LEVEL.fMax = target * 4;
+
+    let attempts = 0;
+    do {
+      LEVEL.L = randRange(level.Lrange[0], level.Lrange[1]);
+      buildResonances();
+      attempts++;
+    } while (attempts < 30 && resonances.some(r => Math.abs(freq - r.f) < LEVEL.tolerance * 3));
+    locked = false;
+
+    gameSubtitle.textContent = `Find the length that makes this tube resonate at ${target.toFixed(1)} Hz.`;
+    levelName.textContent = 'Length — ' + level.title;
+    setLevelIcon(level.image);
+    levelSub.textContent = `${level.blurb} · Tube ${endsLabel(ends)}`;
+    modePipsEl.innerHTML = '';
+    meterBlockEl.style.display = '';
+
+    lengthRow.style.display = 'flex';
+    lengthSlider.min = level.Lrange[0];
+    lengthSlider.max = level.Lrange[1];
+    lengthSlider.step = FINEST_L_STEP;
+    lengthSlider.value = LEVEL.L;
+    lengthValue.textContent = LEVEL.L.toFixed(2) + ' m';
+
+    hintToggle.checked = false;
+    updateBeginnerMode();
+
+    Game.timeLimit = level.timeLimit;
+    Game.timeLeft = level.timeLimit || 0;
+    Game.startTs = performance.now();
+    if (level.timeLimit){
+      timebarWrap.style.display = 'flex';
+      timebarFill.style.width = '100%';
+      timebarFill.classList.remove('low');
+      timebarLabel.textContent = level.timeLimit + ' s';
+      Game.timerId = setInterval(tick, 100);
+    } else {
+      timebarWrap.style.display = 'none';
+    }
+
+    updateReadout();
+    updateAudio();
+    showScreen(gameScreen);
+    resizeCanvas();
+  }
+
+  // ---------- Timer ----------
+  function tick(){
+    Game.timeLeft = Math.max(0, Game.timeLeft - 0.1);
+    const pct = (Game.timeLeft / Game.timeLimit) * 100;
+    timebarFill.style.width = pct + '%';
+    timebarFill.classList.toggle('low', pct < 20);
+    timebarLabel.textContent = Math.ceil(Game.timeLeft) + ' s';
+    if (Game.timeLeft <= 0){
+      clearInterval(Game.timerId);
+      Game.timerId = null;
+      timeUp();
+    }
+  }
+
+  function computeStars(level, elapsedMs){
+    const elapsedSec = elapsedMs / 1000;
+    if (level.timeLimit){
+      const remainingFrac = Math.max(0, (level.timeLimit - elapsedSec) / level.timeLimit);
+      if (remainingFrac >= 0.5) return 3;
+      if (remainingFrac >= 0.2) return 2;
+      return 1;
+    }
+    const par = level.parTime || (level.modesToFind * 20);
+    if (elapsedSec <= par) return 3;
+    if (elapsedSec <= par * 1.6) return 2;
+    return 1;
+  }
+
+  function finishLevel(){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    const levelNum = Game.levelIndex + 1;
+    const level = LEVELS[Game.levelIndex];
+    const elapsedMs = performance.now() - Game.startTs;
+    const stars = computeStars(level, elapsedMs);
+    const t1 = Game.target[0];
+    const Lm = LEVEL.L;
+
+    progress.unlocked = Math.max(progress.unlocked, Math.min(LEVELS.length, levelNum + 1));
+    progress.stars[levelNum] = Math.max(progress.stars[levelNum] || 0, stars);
+    progress.notebook[levelNum] = {
+      title: level.title,
+      image: level.image,
+      ends: level.ends,
+      tubeType: level.tubeType,
+      tint: level.tint,
+      fundamental: t1.f,
+      sentence: level.blurb,
+    };
+    saveProgress(progress);
+
+    const hasNext = Game.levelIndex < LEVELS.length - 1;
+    const goRejouer = () => { hideOverlay(); enterLevel(Game.levelIndex); };
+    const goNext = () => { hideOverlay(); enterLevel(Game.levelIndex + 1); };
+
+    function showFiche(){
+      const entry = progress.notebook[levelNum];
+      const tint = entry.tint || '#5EC8D8';
+      const revealHTML = revealRowHTML({ tubeType: level.tubeType, m: t1.m, idx: t1.idx, L: Lm, f: t1.f, image: null, tint });
+      const imageHTML = entry.image
+        ? `<div class="notebook-card-image" style="background:${rgba(tint, 0.14)};"><img src="${entry.image}" alt=""></div>`
+        : '';
+      const body = `
+        <div class="notebook-card">
+          ${imageHTML}
+          <div class="notebook-card-body">
+            <div class="notebook-fundamental">f₁ ≈ ${Math.round(entry.fundamental)}<span>Hz</span></div>
+            <div class="notebook-identity">Tube ${endsLabel(entry.ends)} · ${seriesLabel(entry.tubeType)}</div>
+            ${revealHTML}
+            <p class="notebook-sentence">${entry.sentence}</p>
+            <p class="notebook-pedagogy">${endsExplanation(entry.ends)}</p>
+          </div>
+        </div>
+      `;
+      const ficheButtons = [{ label: 'Replay', onClick: goRejouer }];
+      if (hasNext) ficheButtons.push({ label: 'Next level', primary: true, onClick: goNext });
+      else ficheButtons.push({ label: 'Menu', primary: true, onClick: backToMenu });
+      if (hasNext) ficheButtons.push({ label: 'Menu', onClick: backToMenu });
+      showOverlay({ title: entry.title, bodyHTML: body, buttons: ficheButtons });
+    }
+
+    const buttons = [
+      { label: 'Result', primary: true, onClick: showFiche },
+      { label: 'Replay', onClick: goRejouer },
+    ];
+    if (hasNext) buttons.push({ label: 'Next level', onClick: goNext });
+    else buttons.push({ label: 'Menu', onClick: backToMenu });
+
+    showOverlay({
+      title: 'Level complete!',
+      bodyHTML: starsHTML(stars) + `<p>Time: ${(elapsedMs / 1000).toFixed(1)} s</p>`,
+      buttons,
+    });
+  }
+
+  // Reopen a level's result fiche from the menu, rebuilt from the saved notebook entry
+  // (the fundamental is stored, so the fundamental's length is recovered from f = V/(k·L)).
+  function showLevelFicheFromMenu(levelNum){
+    const entry = progress.notebook[levelNum];
+    const tint = entry.tint || '#5EC8D8';
+    const k = entry.tubeType === 'OC' ? 4 : 2;
+    const Lm = V / (k * entry.fundamental);
+    const revealHTML = revealRowHTML({ tubeType: entry.tubeType, m: 1, idx: 1, L: Lm, f: entry.fundamental, image: null, tint });
+    const imageHTML = entry.image
+      ? `<div class="notebook-card-image" style="background:${rgba(tint, 0.14)};"><img src="${entry.image}" alt=""></div>`
+      : '';
+    const body = `
+      <div class="notebook-card">
+        ${imageHTML}
+        <div class="notebook-card-body">
+          <div class="notebook-fundamental">f₁ ≈ ${Math.round(entry.fundamental)}<span>Hz</span></div>
+          <div class="notebook-identity">Tube ${endsLabel(entry.ends)} · ${seriesLabel(entry.tubeType)}</div>
+          ${revealHTML}
+          <p class="notebook-sentence">${entry.sentence}</p>
+          <p class="notebook-pedagogy">${endsExplanation(entry.ends)}</p>
+        </div>
+      </div>
+    `;
+    showOverlay({
+      title: entry.title,
+      bodyHTML: body,
+      buttons: [
+        { label: 'Replay', onClick: () => { hideOverlay(); enterLevel(levelNum - 1); } },
+        { label: 'Menu', primary: true, onClick: backToMenu },
+      ],
+    });
+  }
+
+  // ---------- Find the length ----------
+  function checkLengthHit(){
+    if (locked) return;
+    const hit = resonances.find(r => Math.abs(freq - r.f) <= LEVEL.tolerance);
+    if (!hit) return;
+    locked = true;
+    playChime(freq);
+    finishLengthLevel(hit);
+  }
+
+  function finishLengthLevel(hit){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    const i = Game.lengthIndex;
+    const num = i + 1;
+    const level = LENGTH_LEVELS[i];
+    const elapsedMs = performance.now() - Game.startTs;
+    const stars = computeStars(level, elapsedMs);
+
+    progress.lengthStars[num] = Math.max(progress.lengthStars[num] || 0, stars);
+    saveProgress(progress);
+
+    const hasNext = i < LENGTH_LEVELS.length - 1;
+    const buttons = [
+      { label: 'Replay', onClick: () => { hideOverlay(); enterLengthLevel(i); } },
+    ];
+    if (hasNext){
+      buttons.push({ label: 'Next level', primary: true, onClick: () => { hideOverlay(); enterLengthLevel(i + 1); } });
+    } else {
+      buttons.push({ label: 'Menu', primary: true, onClick: backToMenu });
+    }
+    if (hasNext) buttons.push({ label: 'Menu', onClick: backToMenu });
+
+    const revealHTML = revealRowHTML({ tubeType: level.tubeType, m: hit.m, idx: hit.idx, L: LEVEL.L, f: hit.f, image: level.image, tint: level.tint });
+    showOverlay({
+      title: 'Length found!',
+      bodyHTML: `<p>L ≈ <strong>${LEVEL.L.toFixed(2)} m</strong> makes this tube resonate at ${hit.f.toFixed(1)} Hz (mode n=${hit.m}).</p>` +
+        starsHTML(stars) + revealHTML + `<p>Time: ${(elapsedMs / 1000).toFixed(1)} s</p>`,
+      buttons,
+    });
+  }
+
+  function timeUp(){
+    if (Game.mode === 'findL'){
+      showOverlay({
+        title: "Time's up",
+        bodyHTML: `<p>You didn't find the right length in time.</p>`,
+        buttons: [
+          { label: 'Try again', primary: true, onClick: () => { hideOverlay(); enterLengthLevel(Game.lengthIndex); } },
+          { label: 'Menu', onClick: backToMenu },
+        ],
+      });
+      return;
+    }
+    showOverlay({
+      title: "Time's up",
+      bodyHTML: `<p>You found ${Game.foundIdx.size} / ${Game.target.length} modes.</p>`,
+      buttons: [
+        { label: 'Try again', primary: true, onClick: () => { hideOverlay(); enterLevel(Game.levelIndex); } },
+        { label: 'Menu', onClick: backToMenu },
+      ],
+    });
+  }
+
+  // ================= Navigation =================
+  function renderLevelGrid(){
+    levelGrid.innerHTML = '';
+    LEVELS.forEach((level, i) => {
+      const num = i + 1;
+      const isLocked = num > progress.unlocked;
+      const stars = progress.stars[num] || 0;
+      const card = document.createElement('div');
+      card.className = 'level-card' + (isLocked ? ' locked' : '');
+      const flags = [`<span class="level-flag">${endsLabel(level.ends)}</span>`];
+      if (level.meterHidden) flags.push('<span class="level-flag blind">no gauge</span>');
+      if (level.timeLimit) flags.push(`<span class="level-flag">⏱ ${level.timeLimit}s</span>`);
+      const thumb = level.image ? `<div class="level-thumb"><img src="${level.image}" alt=""></div>` : '';
+      card.innerHTML = isLocked
+        ? `<div class="lock-icon">🔒</div><div class="level-title">${level.title}</div>`
+        : `${thumb}<div class="level-num">${num}</div>
+           <div class="level-title">${level.title}</div>
+           <div class="level-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
+           <div class="level-flags">${flags.join('')}</div>`;
+      if (!isLocked){
+        card.addEventListener('click', () => {
+          if (progress.notebook[num]) showLevelFicheFromMenu(num);
+          else startMission(i);
+        });
+      }
+      levelGrid.appendChild(card);
+    });
+
+    kundtEasyCard.onclick = () => enterKundt('easy');
+    kundtFullCard.onclick = () => enterKundt('full');
+  }
+
+  unlockAllBtn.addEventListener('click', () => {
+    progress.unlocked = LEVELS.length;
+    saveProgress(progress);
+    renderLevelGrid();
+  });
+
+  function renderLengthLevelGrid(){
+    lengthLevelGrid.innerHTML = '';
+    LENGTH_LEVELS.forEach((level, i) => {
+      const num = i + 1;
+      const stars = progress.lengthStars[num] || 0;
+      const card = document.createElement('div');
+      card.className = 'level-card';
+      const flags = [`<span class="level-flag">${level.ends ? endsLabel(level.ends) : 'unknown type'}</span>`];
+      if (level.timeLimit) flags.push(`<span class="level-flag">⏱ ${level.timeLimit}s</span>`);
+      const thumb = level.image ? `<div class="level-thumb"><img src="${level.image}" alt=""></div>` : '';
+      card.innerHTML = `${thumb}<div class="level-title">${level.title}</div>
+         <div class="level-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
+         <div class="level-flags">${flags.join('')}</div>`;
+      card.addEventListener('click', () => enterLengthLevel(i));
+      lengthLevelGrid.appendChild(card);
+    });
+  }
+
+  function showScreen(el){
+    menuScreen.classList.remove('active');
+    missionScreen.classList.remove('active');
+    gameScreen.classList.remove('active');
+    el.classList.add('active');
+  }
+
+  function backToMenu(){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    hideOverlay();
+    silenceAudio();
+    Game.mode = null;
+    renderLevelGrid();
+    renderLengthLevelGrid();
+    showScreen(menuScreen);
+  }
+
+  function startMission(i){
+    missionLevelIndex = i;
+    const level = LEVELS[i];
+    if (level.image){
+      missionImg.src = level.image;
+      missionImgBox.hidden = false;
+    } else {
+      missionImgBox.hidden = true;
+    }
+    missionTitle.textContent = level.title;
+    missionFeedback.hidden = true;
+    missionFeedback.innerHTML = '';
+    missionContinueBtn.hidden = true;
+    missionOptions.querySelectorAll('.mission-opt').forEach((b) => {
+      b.disabled = false;
+      b.classList.remove('correct', 'wrong');
+    });
+    showScreen(missionScreen);
+  }
+
+  missionOptions.querySelectorAll('.mission-opt').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const level = LEVELS[missionLevelIndex];
+      const chosen = btn.dataset.ends;
+      missionOptions.querySelectorAll('.mission-opt').forEach((b) => { b.disabled = true; });
+      const correctBtn = missionOptions.querySelector(`[data-ends="${level.ends}"]`);
+      correctBtn.classList.add('correct');
+      if (chosen !== level.ends) btn.classList.add('wrong');
+      missionFeedback.hidden = false;
+      missionFeedback.innerHTML = (chosen === level.ends ? '<span class="ok">Correct!</span> ' : '<span class="no">Not quite.</span> ') + endsExplanation(level.ends);
+      missionContinueBtn.hidden = false;
+    });
+  });
+  missionContinueBtn.addEventListener('click', () => enterLevel(missionLevelIndex));
+  missionMenuBtn.addEventListener('click', backToMenu);
+
+  const SANDBOX_TINT = { OO: '#5EC8D8', OC: '#E8A33D', CC: '#9C7A57' };
+  const SANDBOX_IMAGE = { OO: 'assets/levels/flute-traversiere.svg', OC: 'assets/levels/clarinette.svg', CC: 'assets/levels/kundt-tube.svg' };
+
+  function enterSandbox(ends){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    hideOverlay();
+    setFreqControlsVisible(true);
+    Game.mode = 'sandbox';
+    Game.levelIndex = null;
+
+    LEVEL.tubeType = ends === 'OC' ? 'OC' : 'CF';
+    LEVEL.ends = ends;
+    LEVEL.tint = SANDBOX_TINT[ends];
+    lengthSlider.min = 0.3;
+    lengthSlider.max = 3.5;
+    lengthSlider.step = 0.05;
+    const sliderVal = parseFloat(lengthSlider.value);
+    LEVEL.L = (sliderVal >= 0.3 && sliderVal <= 3.5) ? sliderVal : 1.7;
+    lengthSlider.value = LEVEL.L;
+    LEVEL.sigma = 3.0;
+    LEVEL.tolerance = 0.2;
+    const range = computeSandboxRange(LEVEL.L);
+    LEVEL.fMin = range.fMin; LEVEL.fMax = range.fMax;
+    buildResonances();
+
+    locked = false;
+    freq = randomStart();
+
+    gameSubtitle.textContent = "Sweep the frequency with ← → to make the tube vibrate. Change the length L to shift the modes.";
+    levelName.textContent = 'Sandbox — ' + endsLabel(ends);
+    setLevelIcon(SANDBOX_IMAGE[ends]);
+    levelSub.textContent = `Tube ${endsLabel(LEVEL.ends)} · adjustable length`;
+    timebarWrap.style.display = 'none';
+    lengthRow.style.display = 'flex';
+    lengthValue.textContent = LEVEL.L.toFixed(2) + ' m';
+    modePipsEl.innerHTML = '';
+    meterBlockEl.style.display = '';
+
+    updateBeginnerMode();
+    rebuildSpectrum(resonances);
+    updateReadout();
+    updateAudio();
+    setActiveStep(1);
+    freqInput.value = '';
+    showScreen(gameScreen);
+    resizeCanvas();
+  }
+
+  function enterLevel(i){
+    if (Game.timerId){ clearInterval(Game.timerId); Game.timerId = null; }
+    hideOverlay();
+    setFreqControlsVisible(true);
+    const level = LEVELS[i];
+    Game.mode = 'level';
+    Game.levelIndex = i;
+    Game.foundIdx = new Set();
+    Game.predictionAsked = false;
+
+    LEVEL.tubeType = level.tubeType;
+    LEVEL.ends = level.ends;
+    LEVEL.tint = level.tint || '#9C7A57';
+    LEVEL.L = Array.isArray(level.L) ? randRange(level.L[0], level.L[1]) : level.L;
+    LEVEL.sigma = level.sigma;
+    LEVEL.tolerance = level.tolerance;
+    const range = computeLevelRange(level.tubeType, LEVEL.L, level.modesToFind);
+    LEVEL.fMin = range.fMin; LEVEL.fMax = range.fMax;
+    buildResonances();
+
+    Game.target = resonances.slice(0, level.modesToFind);
+    locked = false;
+    freq = randomStart();
+
+    Game.timeLimit = level.timeLimit;
+    Game.timeLeft = level.timeLimit || 0;
+    Game.startTs = performance.now();
+
+    gameSubtitle.textContent = 'Find every mode listed below to complete the level.';
+    levelName.textContent = `Level ${i + 1} — ${level.title}`;
+    setLevelIcon(level.image);
+    levelSub.textContent = `${level.blurb} · L = ${LEVEL.L.toFixed(2)} m`;
+    lengthRow.style.display = 'none';
+    meterBlockEl.style.display = level.meterHidden ? 'none' : '';
+
+    if (level.timeLimit){
+      timebarWrap.style.display = 'flex';
+      timebarFill.style.width = '100%';
+      timebarFill.classList.remove('low');
+      timebarLabel.textContent = level.timeLimit + ' s';
+      Game.timerId = setInterval(tick, 100);
+    } else {
+      timebarWrap.style.display = 'none';
+    }
+
+    hintToggle.checked = false;
+    updateBeginnerMode();
+    updateModePips();
+    rebuildSpectrum(currentSpectrumList());
+    updateReadout();
+    updateAudio();
+    setActiveStep(1);
+    freqInput.value = '';
+    showScreen(gameScreen);
+    resizeCanvas();
+  }
+
+  // ================= Controls =================
+  document.querySelectorAll('button.step').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const delta = parseFloat(btn.dataset.step);
+      setActiveStep(delta);
+      step(delta);
+    });
+  });
+  setActiveStep(1);
+
+  window.addEventListener('keydown', (e) => {
+    if (!gameScreen.classList.contains('active')) return;
+    // Let native inputs handle their own arrow keys (manual Hz entry, or the length slider
+    // in "find the length" levels — clicking it then pressing ← → nudges it by its step).
+    if (document.activeElement === freqInput || document.activeElement === lengthSlider) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+      e.preventDefault();
+      const dir = e.key === 'ArrowLeft' ? -1 : 1;
+      let d = activeStep;
+      if (e.shiftKey) d = 0.1;
+      else if (e.ctrlKey || e.metaKey) d = 10;
+      step(dir * d);
+    }
+  });
+
+  function applyFreqInput(){
+    setFrequency(parseFloat(freqInput.value));
+    freqInput.value = '';
+    freqInput.blur();
+  }
+  freqGoBtn.addEventListener('click', applyFreqInput);
+  freqInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter'){ e.preventDefault(); applyFreqInput(); }
+  });
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    muteBtn.textContent = muted ? '🔇 Muted' : '🔊 Sound';
+    updateAudio();
+  });
+
+  hintToggle.addEventListener('change', () => {
+    updateBeginnerMode();
+    updateReadout();
+  });
+
+  lengthSlider.addEventListener('input', () => {
+    const newL = parseFloat(lengthSlider.value);
+    if (Game.mode === 'sandbox'){
+      LEVEL.L = newL;
+      lengthValue.textContent = newL.toFixed(2) + ' m';
+      const range = computeSandboxRange(newL);
+      LEVEL.fMin = range.fMin; LEVEL.fMax = range.fMax;
+      buildResonances();
+      freq = Math.min(LEVEL.fMax, Math.max(LEVEL.fMin, freq));
+      locked = false;
+      hideOverlay();
+      rebuildSpectrum(resonances);
+      updateReadout();
+      updateAudio();
+    } else if (Game.mode === 'findL'){
+      if (overlayEl.classList.contains('show') || locked) return;
+      LEVEL.L = newL;
+      lengthValue.textContent = newL.toFixed(2) + ' m';
+      buildResonances();
+      updateReadout();
+      updateAudio();
+      checkLengthHit();
+    }
+  });
+
+  sandboxOO.addEventListener('click', () => enterSandbox('OO'));
+  sandboxOC.addEventListener('click', () => enterSandbox('OC'));
+  sandboxCC.addEventListener('click', () => enterSandbox('CC'));
+  menuBtn.addEventListener('click', backToMenu);
+
+  // ================= Drawing =================
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  function draw(){
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width, H = rect.height;
+    ctx.clearRect(0, 0, W, H);
+    if (W === 0 || H === 0) return;
+
+    const marginX = W * 0.09;
+    const tubeLeft = marginX, tubeRight = W - marginX;
+    const tubeWidth = tubeRight - tubeLeft;
+    const centerY = H * 0.5;
+    const tubeHalfHeight = H * 0.16;
+    const capWidth = W * 0.018;
+
+    const r = responseAt(freq);
+    const cl = closestResonance(freq);
+    const drawMode = cl ? cl.idx : 1;
+    const ends = LEVEL.ends || 'CC';
+    const tint = LEVEL.tint || '#9C7A57';
+
+    const breathing = 0.85 + 0.15 * Math.sin(visualPhase * 3.1);
+    const amp = r * (H * 0.30) * breathing;
+
+    const cyan = [94, 200, 216], gold = [232, 163, 61];
+    const mix = cyan.map((c, i) => Math.round(c + (gold[i] - c) * r));
+    const waveColor = `rgb(${mix[0]},${mix[1]},${mix[2]})`;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.strokeStyle = '#2A3B5C';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(tubeLeft, centerY - tubeHalfHeight, tubeWidth, tubeHalfHeight * 2, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    let caps = [], openEnds = [];
+    if (ends === 'OO'){
+      openEnds = [tubeLeft, tubeRight];
+    } else if (ends === 'OC'){
+      caps = [tubeLeft - capWidth * 0.3];
+      openEnds = [tubeRight];
+    } else {
+      caps = [tubeLeft - capWidth * 0.3, tubeRight - capWidth * 0.7];
+    }
+
+    ctx.fillStyle = darken(tint, 0.55);
+    ctx.strokeStyle = tint;
+    ctx.lineWidth = 1.5;
+    caps.forEach((x) => {
+      ctx.beginPath();
+      ctx.roundRect(x, centerY - tubeHalfHeight - 6, capWidth, tubeHalfHeight * 2 + 12, 3);
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    openEnds.forEach((x) => {
+      const glow = ctx.createRadialGradient(x, centerY, 2, x, centerY, tubeHalfHeight * 1.8);
+      glow.addColorStop(0, rgba(tint, 0.3));
+      glow.addColorStop(1, rgba(tint, 0));
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(x, centerY, tubeHalfHeight * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (r > 0.15){
+      const glow = ctx.createRadialGradient(W/2, centerY, 4, W/2, centerY, tubeWidth * 0.4);
+      glow.addColorStop(0, `rgba(${mix[0]},${mix[1]},${mix[2]},${0.25 * r})`);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(tubeLeft, centerY - tubeHalfHeight * 2, tubeWidth, tubeHalfHeight * 4);
+    }
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    nodePositions(LEVEL.tubeType, drawMode).forEach((xNorm) => {
+      const x = tubeLeft + xNorm * tubeWidth;
+      ctx.beginPath();
+      ctx.moveTo(x, centerY - tubeHalfHeight);
+      ctx.lineTo(x, centerY + tubeHalfHeight);
+      ctx.stroke();
+    });
+
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = waveColor;
+    ctx.shadowColor = waveColor;
+    ctx.shadowBlur = 10 * r;
+    const steps = 160;
+    for (let i = 0; i <= steps; i++){
+      const xNorm = i / steps;
+      const x = tubeLeft + xNorm * tubeWidth;
+      const shape = modeShape(LEVEL.tubeType, drawMode, xNorm);
+      const y = centerY - amp * shape * Math.cos(visualPhase * 2.6);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(tubeLeft, centerY);
+    ctx.lineTo(tubeRight, centerY);
+    ctx.stroke();
+  }
+
+  function loop(){
+    visualPhase += 0.02;
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ================= Init =================
+  resizeCanvas();
+  renderLevelGrid();
+  renderLengthLevelGrid();
+  showScreen(menuScreen);
+  loop();
+
+  ['click', 'keydown', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, function initOnce(){
+      ensureAudio();
+      updateAudio();
+      window.removeEventListener(evt, initOnce);
+    }, { once: true });
+  });
+})();
+</script>
+
+</body>
+</html>
