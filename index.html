@@ -1031,7 +1031,25 @@
   let freq = 100;
   let locked = false;   // used only in sandbox mode
   let muted = false;
-  let audioCtx = null, osc = null, gainNode = null;
+  let audioCtx = null, osc = null, oscGain = null, gainNode = null;
+
+  // Real-instrument search voice: levels can set `instrument: 'flute'` to replace the
+  // plain sweep tone with a pitch-shifted recorded sample while hunting for a resonance.
+  // Recordings only exist at a few notes per octave, so we keep several loaded and pick
+  // whichever is closest to the live frequency, crossfading when a closer one takes over —
+  // this keeps the pitch-shift (and its "chipmunk" artifacts) small at any given moment.
+  const INSTRUMENT_NOTES = {
+    flute: [
+      { note: 'C4', f: 261.626 }, { note: 'E4', f: 329.628 }, { note: 'A4', f: 440.000 },
+      { note: 'C5', f: 523.251 }, { note: 'E5', f: 659.255 }, { note: 'A5', f: 880.000 },
+      { note: 'C6', f: 1046.502 }, { note: 'E6', f: 1318.510 }, { note: 'A6', f: 1760.000 },
+      { note: 'C7', f: 2093.005 },
+    ],
+  };
+  const instrumentBuffers = {};   // { flute: { C4: AudioBuffer, ... } } once loaded
+  const instrumentLoading = {};   // { flute: true } while a fetch is in flight
+  let instrumentVoice = null;     // { name, note, source, gain } currently playing
+  let instrumentPrevVoice = null; // the previous note, fading out during a crossfade
   let visualPhase = 0;
   let toastTimer = null;
 
@@ -1111,7 +1129,7 @@
 
     { title: 'A transverse flute', ends: 'OO', tubeType: 'CF', L: 0.66,
       tolerance: 0.4, sigma: 3.2, modesToFind: 2, hints: true, timeLimit: null, parTime: 22,
-      tint: '#C9B37A', image: 'assets/levels/flute-traversiere.svg',
+      tint: '#C9B37A', image: 'assets/levels/flute-traversiere.svg', instrument: 'flute',
       blurb: "Open at the mouthpiece and the far end: every harmonic can resonate." },
 
     { title: 'A pan flute', ends: 'OC', tubeType: 'OC', L: 0.4,
@@ -1527,24 +1545,105 @@
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     osc = audioCtx.createOscillator();
     osc.type = 'sine';
+    oscGain = audioCtx.createGain();
+    oscGain.gain.value = 1;
     gainNode = audioCtx.createGain();
     gainNode.gain.value = 0;
-    osc.connect(gainNode);
+    osc.connect(oscGain);
+    oscGain.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     osc.frequency.value = freq;
     osc.start();
   }
 
+  // Which instrument (if any) should drive the search voice for the level being played.
+  function currentInstrument(){
+    if (Game.mode !== 'level') return null;
+    const level = LEVELS[Game.levelIndex];
+    return (level && level.instrument && instrumentBuffers[level.instrument]) ? level.instrument : null;
+  }
+
+  function loadInstrumentSamples(name){
+    if (instrumentBuffers[name] || instrumentLoading[name] || !INSTRUMENT_NOTES[name]) return;
+    instrumentLoading[name] = true;
+    ensureAudio();
+    Promise.all(INSTRUMENT_NOTES[name].map(({ note }) =>
+      fetch(`assets/audio/${name}/${note}.mp3`)
+        .then(res => res.arrayBuffer())
+        .then(buf => audioCtx.decodeAudioData(buf))
+        .then(audioBuf => [note, audioBuf])
+    )).then(entries => {
+      instrumentBuffers[name] = Object.fromEntries(entries);
+    }).finally(() => { instrumentLoading[name] = false; });
+  }
+
+  function nearestInstrumentNote(name, f){
+    let best = null, bestD = Infinity;
+    for (const n of INSTRUMENT_NOTES[name]){
+      const d = Math.abs(Math.log2(f / n.f));
+      if (d < bestD){ best = n; bestD = d; }
+    }
+    return best;
+  }
+
+  function startInstrumentVoice(name, note){
+    const source = audioCtx.createBufferSource();
+    source.buffer = instrumentBuffers[name][note.note];
+    source.loop = true;
+    const voiceGain = audioCtx.createGain();
+    voiceGain.gain.value = 0;
+    source.connect(voiceGain);
+    voiceGain.connect(gainNode);
+    source.start();
+    return { name, note, source, gain: voiceGain };
+  }
+
+  // Keeps a single sample voice glissando-smooth (playbackRate ramps like the oscillator's
+  // frequency does) and only swaps to a closer-pitched sample when the current one would
+  // otherwise have to stretch too far, crossfading so the swap itself isn't audible.
+  function updateInstrumentVoice(name, f){
+    const nearest = nearestInstrumentNote(name, f);
+    if (!instrumentVoice || instrumentVoice.name !== name || instrumentVoice.note.note !== nearest.note){
+      if (instrumentPrevVoice) instrumentPrevVoice.source.stop(audioCtx.currentTime + 0.06);
+      if (instrumentVoice){
+        instrumentPrevVoice = instrumentVoice;
+        instrumentPrevVoice.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+        instrumentPrevVoice.source.stop(audioCtx.currentTime + 0.15);
+      }
+      instrumentVoice = startInstrumentVoice(name, nearest);
+    }
+    instrumentVoice.gain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.02);
+    instrumentVoice.source.playbackRate.setTargetAtTime(f / instrumentVoice.note.f, audioCtx.currentTime, 0.03);
+  }
+
+  function stopInstrumentVoice(){
+    if (instrumentPrevVoice){ instrumentPrevVoice.source.stop(audioCtx.currentTime + 0.06); instrumentPrevVoice = null; }
+    if (instrumentVoice){
+      instrumentVoice.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      instrumentVoice.source.stop(audioCtx.currentTime + 0.2);
+      instrumentVoice = null;
+    }
+  }
+
   function updateAudio(){
     if (!audioCtx) return;
     const r = responseAt(freq);
-    osc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.03);
     // The swept tone stays audible at all times (like a speaker driving the tube);
     // it swells noticeably when the frequency lands on a resonance.
     const baseGain = 0.045;
     const boostGain = r * 0.18;
     const targetGain = muted ? 0 : (baseGain + boostGain);
     gainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.05);
+
+    const instrument = currentInstrument();
+    if (instrument){
+      oscGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+      updateInstrumentVoice(instrument, freq);
+    } else {
+      oscGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.02);
+      osc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.03);
+      if (instrumentVoice) stopInstrumentVoice();
+    }
   }
 
   function silenceAudio(){
@@ -2391,6 +2490,7 @@
     Game.target = resonances.slice(0, level.modesToFind);
     locked = false;
     freq = randomStart();
+    if (level.instrument) loadInstrumentSamples(level.instrument);
 
     Game.timeLimit = level.timeLimit;
     Game.timeLeft = level.timeLimit || 0;
